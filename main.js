@@ -187,7 +187,7 @@ function updateBook(event) {
   renderBooks();
 }
 
-function moveBook(id) {
+function moveBook(id, event) {
   bookshelf.moveBook(id);
 
   const isSearched = document.getElementById("searchBookTitle").value;
@@ -199,7 +199,7 @@ function moveBook(id) {
   }
 }
 
-function deleteBook(id) {
+function deleteBook(id, event) {
   if (
     !confirm(
       "Are you sure you want to delete this book?\nThis action cannot be undone.\nBook Title: " +
@@ -239,14 +239,15 @@ bookshelf.loadFromLocalStorage();
 document
   .getElementById("inputBookIsComplete")
   .addEventListener("change", function () {
+    const spanElement = document.getElementById("bookSubmit").getElementsByTagName("span")[0];
     if (this.checked) {
-      document
-        .getElementById("bookSubmit")
-        .getElementsByTagName("span")[0].textContent = "Finished";
+      if (spanElement) {
+        spanElement.textContent = "Finished";
+      }
     } else {
-      document
-        .getElementById("bookSubmit")
-        .getElementsByTagName("span")[0].textContent = "Unfinished";
+      if (spanElement) {
+        span.textContent = "Unfinished";
+      }
     }
   });
 
