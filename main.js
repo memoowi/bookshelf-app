@@ -13,6 +13,32 @@ const bookshelf = {
     this.books.push(book);
     this.saveToLocalStorage();
   },
+  editBook: function (id) {
+    const index = this.findBookIndex(id);
+
+    if (index !== -1) {
+      const book = this.books[index];
+      return book;
+    } else {
+      throw new Error("Book not found");
+    }
+  },
+  resetForm: function () {
+    document.getElementById("inputBook").reset();
+    document.getElementById("bookSubmit").setAttribute("data-id", "");
+    document.getElementById("bookSubmit").innerHTML =
+      "Insert New book to <span>Unfinished</span> shelf";
+  },
+  updateBook: function (id, updatedBook) {
+    const index = this.findBookIndex(id);
+
+    if (index !== -1) {
+      this.books[index] = updatedBook;
+      this.saveToLocalStorage();
+    } else {
+      throw new Error("Book not found");
+    }
+  },
   moveBook: function (id) {
     const index = this.findBookIndex(id);
 
@@ -73,20 +99,17 @@ async function renderBooks(books) {
           <p>Author: ${book.author}</p>
           <p>Year: ${book.year}</p>
           <div class="action">
-            <button class="edit" onclick="moveBook('${book.id}')" title="Move"></button>
+            <button class="move" onclick="moveBook('${book.id}')" title="Move"></button>
+            <button class="edit" onclick="editBook('${book.id}')" title="Edit">Edit</button>
             <button class="delete" onclick="deleteBook('${book.id}')" title="Delete">${trashIconText}</button>
           </div>
         `;
 
     if (book.isComplete) {
-      bookElement.querySelector(
-        ".edit"
-      ).innerHTML = cancelIconText;
+      bookElement.querySelector(".move").innerHTML = cancelIconText;
       completeBookshelfList.appendChild(bookElement);
     } else {
-      bookElement.querySelector(
-        ".edit"
-      ).innerHTML = doneIconText;
+      bookElement.querySelector(".move").innerHTML = doneIconText;
       incompleteBookshelfList.appendChild(bookElement);
     }
   });
@@ -98,7 +121,7 @@ function addBook(event) {
   const id = +new Date();
   const title = document.getElementById("inputBookTitle").value;
   const author = document.getElementById("inputBookAuthor").value;
-  const year = document.getElementById("inputBookYear").value;
+  const year = parseInt(document.getElementById("inputBookYear").value);
   const isComplete = document.getElementById("inputBookIsComplete").checked;
 
   const book = { id, title, author, year, isComplete };
@@ -106,6 +129,61 @@ function addBook(event) {
 
   document.getElementById("inputBook").reset();
   document.getElementById("searchBook").reset();
+  renderBooks();
+}
+
+function editBook(id) {
+  const book = bookshelf.editBook(id);
+
+  document.getElementById("inputBookTitle").value = book.title;
+  document.getElementById("inputBookAuthor").value = book.author;
+  document.getElementById("inputBookYear").value = book.year;
+
+  if (book.isComplete) {
+    document.getElementById("inputBookIsComplete").checked = true;
+  } else {
+    document.getElementById("inputBookIsComplete").checked = false;
+  }
+
+  const bookSubmitElement = document.getElementById("bookSubmit");
+  bookSubmitElement.setAttribute("data-id", id);
+  bookSubmitElement.setAttribute("onclick", "updateBook(event)");
+  bookSubmitElement.innerHTML = "Update book";
+
+  const resetButtonElement = document.createElement("button");
+  resetButtonElement.setAttribute("id", "resetButton");
+  resetButtonElement.setAttribute("type", "button");
+  resetButtonElement.setAttribute("onclick", "resetForm(event)");
+  resetButtonElement.innerHTML = "Reset";
+
+  bookSubmitElement.insertAdjacentElement("afterend", resetButtonElement);
+
+  document.getElementById("inputBookTitle").focus();
+}
+
+function resetForm(event) {
+  event.preventDefault();
+
+  bookshelf.resetForm();
+  const resetButtonElement = document.getElementById("resetButton");
+  resetButtonElement.remove();
+}
+
+function updateBook(event) {
+  event.preventDefault();
+
+  const id = event.target.dataset.id;
+  const title = document.getElementById("inputBookTitle").value;
+  const author = document.getElementById("inputBookAuthor").value;
+  const year = parseInt(document.getElementById("inputBookYear").value);
+  const isComplete = document.getElementById("inputBookIsComplete").checked;
+
+  const book = {  id, title, author, year, isComplete };
+  bookshelf.updateBook( id, book);
+
+  document.getElementById("searchBook").reset();
+  resetForm(event);
+
   renderBooks();
 }
 
@@ -122,14 +200,23 @@ function moveBook(id) {
 }
 
 function deleteBook(id) {
-  bookshelf.deleteBook(id);
-
-  const isSearched = document.getElementById("searchBookTitle").value;
-
-  if (isSearched !== "") {
-    searchBook(event);
+  if (
+    !confirm(
+      "Are you sure you want to delete this book?\nThis action cannot be undone.\nBook Title: " +
+        bookshelf.books[bookshelf.findBookIndex(id)].title
+    )
+  ) {
+    return;
   } else {
-    renderBooks();
+    bookshelf.deleteBook(id);
+
+    const isSearched = document.getElementById("searchBookTitle").value;
+
+    if (isSearched !== "") {
+      searchBook(event);
+    } else {
+      renderBooks();
+    }
   }
 }
 
